@@ -72,19 +72,21 @@ class DatabaseUtils:
                 connection.close()
 
     def run_sql_query(self,query):
+        # print(self.connection)
+        connection=self.connection
+        cursor=connection.cursor()
         try:
-            connection=self.connection
-            cursor=connection.cursor()
+            
             cursor.execute(query)
             result=cursor.fetchall()
-
+            return str(result)   
 
         except Exception as e:
             print(f"Error retrieving schema details: {e}")
             return None
                 
         finally:
-            return str(result)   
+            
             if cursor:
                 cursor.close()
             if connection:
@@ -96,18 +98,18 @@ class DatabaseUtils:
 
         
 
-obj = DatabaseUtils(
-    {
-        "host": "localhost",
-        "port": 5432,
-        "user": "postgres",
-        "password": "postgres",
-        "database": "postgres",
-    }
-)
-res=obj.schema_details('public')
+# obj = DatabaseUtils(
+#     {
+#         "host": "localhost",
+#         "port": 5432,
+#         "user": "postgres",
+#         "password": "postgres",
+#         "database": "postgres",
+#     }
+# )
+# res=obj.schema_details('public')
 
 
 
-with open("schema_details.txt", "w") as f:
-    f.write(res)
+# with open("schema_details.txt", "w") as f:
+#     f.write(res)

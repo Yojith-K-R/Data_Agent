@@ -28,7 +28,7 @@ def curated_question(state: AgentState)-> AgentState:
 
     # Extract the curated question from the LLM's response
     state.curated_question = curated_question_response.content.strip()
-    state.messages=[HumanMessage(content=curated_question)]
+    state.messages=[HumanMessage(content=state.curated_question)]
 
     return state
 
@@ -76,9 +76,8 @@ def prompt_query_context(state:AgentState)->AgentState:
 
 def generate_sql_query(state:AgentState)->AgentState:
     llm=llm_pick("medium")
-    response = llm.invoke(prompt)
-
     prompt=state.prompt_query_context
+    response = llm.invoke(prompt)
 
     state.generated_sql_query = response.content.strip()
 
@@ -132,14 +131,16 @@ def execute_sql(state: AgentState) -> AgentState:
         "port": os.environ['port'],
         "user": os.environ['user'],
         "password": os.environ['password'],
-        "dbname": os.environ['database']
+        "database": os.environ['database']
     }
 
     obj = DatabaseUtils(conn_details)
 
-    execution_result = obj.execute_sql(sql_query)  # Execute the SQL query on the database
+    execution_result = obj.run_sql_query(sql_query)  # Execute the SQL query on the database
 
     state.sql_query_execution_result = execution_result
+
+    return state
 
 
 
@@ -205,15 +206,26 @@ graph.add_edge("execute_sql", "final_answer_makeUP")
 graph.add_edge("final_answer_makeUP", END)
 
 
-# Compile
-app = graph.compile()
 
 
-# Invoke
-initial_state = AgentState(
-    user_question="Show me the top 10 customers based on total payments"
-)
+if __name__ == "__main__":
+    # Compile
+    sql_agent_workflow = graph.compile()
 
-result = app.invoke(initial_state)
 
-print(result)
+    # Invoke
+    initial_state = AgentState(
+        user_question="Show me the top 10 customers based on total payments"
+    )
+
+    result = sql_agent_workflow.invoke(initial_state)  
+    # print(type(result))
+    print(result['messages'])
+    print("__________")
+    print(result['curated_question'])
+    print("__________")
+    print(result['generated_sql_query'])
+    print("__________")
+    print(result['sql_query_execution_result'])
+    print("__________")
+    print(result['final_answer'])
