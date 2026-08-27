@@ -72,12 +72,25 @@ class DatabaseUtils:
                 connection.close()
 
     def run_sql_query(self,query):
-        connection=self.connection
-        cursor=connection.cursor()
-        cursor.execute(query)
-        result=cursor.fetchall()
+        try:
+            connection=self.connection
+            cursor=connection.cursor()
+            cursor.execute(query)
+            result=cursor.fetchall()
 
-        return str(result)    
+
+        except Exception as e:
+            print(f"Error retrieving schema details: {e}")
+            return None
+                
+        finally:
+            return str(result)   
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
+         
 
 
 

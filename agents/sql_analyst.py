@@ -1,5 +1,7 @@
+from typing import Literal
+
 from utils.llm_pick import llm_pick
-from Models.schema import AgentState
+from Models.schema import AgentState, JudgeSchema
 from utils.database import DatabaseUtils
 import os
 from dotenv import load_dotenv
@@ -63,40 +65,155 @@ def prompt_query_context(state:AgentState)->AgentState:
     
     """    
 
-    llm=llm_pick("medium")
+    state.prompt_query_context=prompt
 
-    response = llm.invoke(prompt)
-    state.generated_sql_query = response.content.strip()
-
-    state.sql_query_execution_result=db_obj.run_sql_query(state.generated_sql_query)
+    # state.sql_query_execution_result=db_obj.run_sql_query(state.generated_sql_query)
 
     # print(state)
     return state
+
+# Generate sql query node
+
+def generate_sql_query(state:AgentState)->AgentState:
+    llm=llm_pick("medium")
+    response = llm.invoke(prompt)
+
+    prompt=state.prompt_query_context
+
+    state.generated_sql_query = response.content.strip()
+
+    return state
+
+
+# Query validation node
+def is_query_valid(state:AgentState)->AgentState:
     
+    llm=llm_pick('low')
+    llm_judge=llm.with_structured_output(schema=JudgeSchema)
+
+    sql_query = state.generated_sql_query;
+
+    prompt = f"""
+        You are an SQL Judge for data security. Your task is to determine whether the SQL query is 
+        safe or not. The SQL query should only be used for data retrieval and should not modify the 
+        database in any way. Neither the SQL query nor the prompt should contain any SQL commands that can modify the
+        database, such as INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, or any other commands that can change
+        the structure or content of the database. If the SQL query is safe, respond with 'Yes' otherwise respond with 
+        'No'. Additionally, provide comments explaining your decision.
+        Here's the SQL query to evaluate:
+        {sql_query}"""
+
+
+    result=llm_judge.invoke(prompt).model_dump()
+    state.is_safe=result['answer']
+    state.comments=result['comments']
+
+    return state
+
+
+# Cancelled sql query node
+
+def cancelled_query(state:AgentState)->AgentState:
+    comments = state.comments
+
+    state.final_answer = f"The generated SQL query was deemed unsafe to execute. The reason provided by the judge is: {comments}. Therefore, the SQL query will not be executed."
+    state.messages = state.messages + [AIMessage(content=f"{state.final_answer}")]  # Append the final answer to the messages list  
+
+    return state
+
+
+# Execute SQL Query Node
+def execute_sql(state: AgentState) -> AgentState:
+
+    sql_query = state.generated_sql_query
+
+    conn_details = {
+        "host": os.environ['host'],
+        "port": os.environ['port'],
+        "user": os.environ['user'],
+        "password": os.environ['password'],
+        "dbname": os.environ['database']
+    }
+
+    obj = DatabaseUtils(conn_details)
+
+    execution_result = obj.execute_sql(sql_query)  # Execute the SQL query on the database
+
+    state.sql_query_execution_result = execution_result
 
 
 
-# # Create the graph
-# graph = StateGraph(AgentState)
+# Final answer make up
 
-# # Add nodes
-# graph.add_node("curated_question", curated_question)
-# graph.add_node("prompt_query_context", prompt_query_context)
+def final_answer_makeUP(state:AgentState)->AgentState:
 
-# # Define workflow
-# graph.add_edge(START, "curated_question")
-# graph.add_edge("curated_question", "prompt_query_context")
-# graph.add_edge("prompt_query_context", END)
+    execution_result=state.sql_query_execution_result
+    curated_question=state.curated_question
 
-# # Compile
-# app = graph.compile()
+    llm = llm_pick("low")
+
+    prompt = f"""
+    You are an SQL analyst agent. Your task is to provide a final answer to the user based on the
+    execution result of the SQL query and the user's original question. The final answer should be
+    concise, clear, and directly address the user's query. Avoid including any SQL code or technical
+    details in the final answer. The final answer should be in a user-friendly format that is easy to
+    understand. If the execution result is empty or does not provide a clear answer to the user's question, explain this in the final answer. \n
+    Here is the execution result: {execution_result} \n
+    Here is the user's original question: {curated_question}
+    """
+
+    llm_response = llm.invoke(prompt).content  # Get the final answer from the LLM
+
+    state.final_answer=llm_response
+    state.messages=[AIMessage(content=llm_response)]
+
+    return state
+
+def check_query_validity(state:AgentState)->Literal["Yes","No"]:
+    if state.is_safe=="Yes":
+        return "Yes"
+    else:
+        return "No"
 
 
-# # Invoke
-# initial_state = AgentState(
-#     user_question="Show me the top 10 customers based on total payments"
-# )
 
-# result = app.invoke(initial_state)
+# Create the graph
+graph = StateGraph(AgentState)
 
-# print(result)
+# Add nodes
+graph.add_node("curated_question", curated_question)
+graph.add_node("prompt_query_context", prompt_query_context)
+graph.add_node("generate_sql_query",generate_sql_query)
+graph.add_node("is_query_valid",is_query_valid)
+graph.add_node("cancelled_query",cancelled_query)
+graph.add_node("execute_sql",execute_sql)
+graph.add_node("final_answer_makeUP",final_answer_makeUP)
+
+# Define workflow
+graph.add_edge(START, "curated_question")
+graph.add_edge("curated_question", "prompt_query_context")
+graph.add_edge("prompt_query_context", "generate_sql_query")
+graph.add_edge("generate_sql_query", "is_query_valid")
+
+graph.add_conditional_edges("is_query_valid", check_query_validity,{
+    'Yes':'execute_sql',
+    "No":'cancelled_query'
+})
+
+graph.add_edge("cancelled_query", END)
+graph.add_edge("execute_sql", "final_answer_makeUP")
+graph.add_edge("final_answer_makeUP", END)
+
+
+# Compile
+app = graph.compile()
+
+
+# Invoke
+initial_state = AgentState(
+    user_question="Show me the top 10 customers based on total payments"
+)
+
+result = app.invoke(initial_state)
+
+print(result)
