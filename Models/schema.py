@@ -27,3 +27,8 @@ class JudgeSchema(BaseModel):
 
     answer:Literal['Yes','No']=Field(...,description="Judge if the genereated query is suitable for execution or not,just tell Yes if its safe otherwise No")
     comments:str=Field(...,description="Just additional comments regarding the query")
+
+
+class ETLAgentSchema(BaseModel):
+    """Represent the schema for the ETL Agent"""
+    messages:Annotated[list[BaseMessage], add_messages]=Field(...,description="the message list to be processed by the etl agent")
