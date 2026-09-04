@@ -1,13 +1,13 @@
 from langchain.messages import HumanMessage
 from langgraph.graph import START, StateGraph, END
-from models.schema import DataAgentState, RouterSchema
-from llm.llm_pick import llm_pick
+from data_agent.models.schema import DataAgentState, RouterSchema
+from data_agent.llm.llm_pick import llm_pick
 
 from typing import Literal
-from agents.etl_analyst import etlAgent
-from llm.llm_pick import llm_pick
-from agents.sql_analyst import sql_agent_workflow
-from models.schema import AgentState
+from data_agent.agents.etl_analyst import etlAgent
+from data_agent.llm.llm_pick import llm_pick
+from data_agent.agents.sql_analyst import sql_agent_workflow
+from data_agent.models.schema import AgentState
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END

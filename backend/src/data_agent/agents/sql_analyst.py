@@ -1,8 +1,8 @@
 from typing import Literal
 
-from llm.llm_pick import llm_pick
-from models.schema import AgentState, JudgeSchema
-from database.database import DatabaseUtils
+from data_agent.llm.llm_pick import llm_pick
+from data_agent.models.schema import AgentState, JudgeSchema
+from data_agent.database.database import DatabaseUtils
 import os
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage
