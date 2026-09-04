@@ -48,11 +48,11 @@ def transform_load_context_tool(output_folder:str,output_format:str,user_questio
     etlTool=ETLTools()
     input_file_final=Path(__file__).resolve().parent.parent/"data"/"ETL"/input_file_path
     top_3_rows= etlTool.transform_load_context(input_file_path)
-    print(f"Top 3 rows\n{top_3_rows}")
+    # print(f"Top 3 rows\n{top_3_rows}")
 
     output_folder_final=Path(__file__).resolve().parent.parent/"data"/"ETL"/output_folder
 
-    print(f"output folder final {output_folder_final}")
+    # print(f"output folder final {output_folder_final}")
 
     prompt = f"""
             You are a Python Data Analyst who uses Pandas to analyze data. 
@@ -178,32 +178,33 @@ graph.add_edge(
 etlAgent = graph.compile()
 
 
-# ==========================================
-# RUN
-# ==========================================
+if __name__ == "__main__":
+    # ==========================================
+    # RUN
+    # ==========================================
 
-# result = etlAgent.invoke(
-#     {
-#         "messages": [HumanMessage(content="I want to extract the data from the API endpoint 'https://pokeapi.co/api/v2/pokemon' and save it to 'extractedData' folder as csv file")]
-#     }
-# )
-result = etlAgent.invoke(
-    {
-        "messages": [HumanMessage(content="I need to extract only the names starting with 'c' from 'extractedData/extracted_data.csv' this  csv file and then save it into the output folder 'transformedData/transformed.csv'")]
-    }
-)
+    # result = etlAgent.invoke(
+    #     {
+    #         "messages": [HumanMessage(content="I want to extract the data from the API endpoint 'https://pokeapi.co/api/v2/pokemon' and save it to 'extractedData' folder as csv file")]
+    #     }
+    # )
+    result = etlAgent.invoke(
+        {
+            "messages": [HumanMessage(content="I need to extract only the names starting with 'c' from 'extractedData/extracted_data.csv' this  csv file and then save it into the output folder 'transformedData/transformed.csv'")]
+        }
+    )
 
-print()
-
-
-for msg in result['messages']:
-    print(type(msg))
-    print(msg.content)
-    try:
-        print(msg.tool_calls)
-
-    except:
-        print("No tool calls present")
     print()
+
+
+    for msg in result['messages']:
+        print(type(msg))
+        print(msg.content)
+        try:
+            print(msg.tool_calls)
+
+        except:
+            print("No tool calls present")
+        print()
 
 

@@ -32,3 +32,12 @@ class JudgeSchema(BaseModel):
 class ETLAgentSchema(BaseModel):
     """Represent the schema for the ETL Agent"""
     messages:Annotated[list[BaseMessage], add_messages]=Field(...,description="the message list to be processed by the etl agent")
+
+
+class RouterSchema(BaseModel):
+    answer:Literal['sql','etl']=Field(...,description="This the router that will decide wheather to go to sql agent or etl analyst agent based on the user question")
+    comments:str=Field(...,description="Additional comments upon the decision")
+
+class DataAgentState(BaseModel):
+    messages:Annotated[list[BaseMessage], add_messages]=Field(...,description="the message list to be processed by the data_agent")
+    routerResponse:Literal['etl','sql']|None=Field(default=None,description="The router response for understading where actually the flow needs to route")

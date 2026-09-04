@@ -102,7 +102,8 @@ class ETLTools:
 
 
 
-etlTool=ETLTools()
+if __name__ == "__main__":
+    etlTool=ETLTools()
 
-# print(etlTool.extract_load(url="https://pokeapi.co/api/v2/pokemon/",output_folder="data/ETL",format="csv"))
-print(etlTool.transform_load_context(file_path1="extracted_data.csv"))
+    # print(etlTool.extract_load(url="https://pokeapi.co/api/v2/pokemon/",output_folder="data/ETL",format="csv"))
+    print(etlTool.transform_load_context(file_path1="extracted_data.csv"))

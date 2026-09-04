@@ -206,11 +206,11 @@ graph.add_edge("execute_sql", "final_answer_makeUP")
 graph.add_edge("final_answer_makeUP", END)
 
 
-
+sql_agent_workflow = graph.compile()
 
 if __name__ == "__main__":
     # Compile
-    sql_agent_workflow = graph.compile()
+    
 
 
     # Invoke
