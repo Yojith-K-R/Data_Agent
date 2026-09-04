@@ -41,3 +41,4 @@ class RouterSchema(BaseModel):
 class DataAgentState(BaseModel):
     messages:Annotated[list[BaseMessage], add_messages]=Field(...,description="the message list to be processed by the data_agent")
     routerResponse:Literal['etl','sql']|None=Field(default=None,description="The router response for understading where actually the flow needs to route")
+    generated_sql_query:str|None=Field(default=None, description="The generated query in case of sql node")

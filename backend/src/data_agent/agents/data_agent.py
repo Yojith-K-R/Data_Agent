@@ -1,20 +1,15 @@
 from langchain.messages import HumanMessage
-from langchain_core.tools import tool
 from langgraph.graph import START, StateGraph, END
-from langgraph.prebuilt import ToolNode
-from Models.schema import DataAgentState, ETLAgentSchema, RouterSchema
-from utils.etl_tools import ETLTools
-from utils.llm_pick import llm_pick
-from pathlib import Path
+from data_agent.models.schema import DataAgentState, RouterSchema
+from data_agent.llm.llm_pick import llm_pick
+
 from typing import Literal
-from agents.etl_analyst import etlAgent
-from utils.llm_pick import llm_pick
-from agents.sql_analyst import sql_agent_workflow
-from Models.schema import AgentState, JudgeSchema
-from utils.database import DatabaseUtils
-import os
+from data_agent.agents.etl_analyst import etlAgent
+from data_agent.llm.llm_pick import llm_pick
+from data_agent.agents.sql_analyst import sql_agent_workflow
+from data_agent.models.schema import AgentState
 from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 load_dotenv()
 
@@ -32,7 +27,9 @@ def routerNode(state:DataAgentState):
     routerResponse=llm_router.invoke(user_question)
     state.routerResponse=routerResponse.answer
 
-    return state
+    return {
+        'routerResponse':routerResponse.answer
+    }
 
 def etl_node(state:DataAgentState):
     result = etlAgent.invoke(
@@ -41,18 +38,12 @@ def etl_node(state:DataAgentState):
                 }
             )
         
-    print()
+    final_message=result['messages'][-1]
+    return {
+        'messages':[final_message]
+    }
 
 
-    for msg in result['messages']:
-        print(type(msg))
-        print(msg.content)
-        try:
-            print(msg.tool_calls)
-
-        except:
-            print("No tool calls present")
-        print()
 
 def sql_node(state:DataAgentState):
     initial_state = AgentState(
@@ -71,6 +62,13 @@ def sql_node(state:DataAgentState):
     print("__________")
     print(result['final_answer'])
 
+    final_message=result['messages'][-1]
+    generated_sql_query=result['generated_sql_query']
+    return {
+        'messages':[final_message],
+        'generated_sql_query':generated_sql_query
+    }
+
 def checkRoute(state:DataAgentState)->Literal['sql','etl']:
     if state.routerResponse=='etl':
         return 'etl'
@@ -88,6 +86,9 @@ graph.add_conditional_edges('routerNode',checkRoute,{
     'etl':'etl_node',
     'sql':'sql_node'
 })
+
+graph.add_edge('etl_node',END)
+graph.add_edge('sql_node',END)
 
 data_agent=graph.compile()
 
@@ -110,3 +111,4 @@ if __name__ == "__main__":
     response=data_agent.invoke(intialState)
 
     print(response)
+    print(response['messages'][-1].content)
