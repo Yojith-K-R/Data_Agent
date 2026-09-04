@@ -3,11 +3,9 @@ from typing import Literal
 from data_agent.llm.llm_pick import llm_pick
 from data_agent.models.schema import AgentState, JudgeSchema
 from data_agent.database.database import DatabaseUtils
-import os
-from dotenv import load_dotenv
+from data_agent.config import get_settings
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
-load_dotenv()
 
 def curated_question(state: AgentState)-> AgentState:
     """
@@ -35,12 +33,13 @@ def curated_question(state: AgentState)-> AgentState:
 
 def prompt_query_context(state:AgentState)->AgentState:
     """Generate a SQL query that will be used to run on the database directly"""
+    settings=get_settings()
     db_config={
-        'host' : os.getenv("host"),
-        'port' : os.getenv("port"),
-        'user' : os.getenv("user"),
-        'password' : os.getenv("password"),
-        'database' : os.getenv("database")
+        'host' : settings.host,
+        'port' : settings.port,
+        'user' : settings.user,
+        'password' : settings.password,
+        'database' : settings.database
     }
     db_obj=DatabaseUtils(db_config)
     schema_info=db_obj.schema_details("public")
@@ -125,13 +124,13 @@ def cancelled_query(state:AgentState)->AgentState:
 def execute_sql(state: AgentState) -> AgentState:
 
     sql_query = state.generated_sql_query
-
+    settings = get_settings()
     conn_details = {
-        "host": os.environ['host'],
-        "port": os.environ['port'],
-        "user": os.environ['user'],
-        "password": os.environ['password'],
-        "database": os.environ['database']
+        "host": settings.host,
+        "port": settings.port,
+        "user": settings.user,
+        "password": settings.password,
+        "database": settings.database
     }
 
     obj = DatabaseUtils(conn_details)

@@ -11,3 +11,12 @@ def test_health_check():
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_query_rejects_empty_question():
+    response = client.post(
+        "/api/v1/query",
+        json={"question": ""},
+    )
+
+    assert response.status_code == 422

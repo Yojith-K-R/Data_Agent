@@ -63,8 +63,10 @@ def sql_node(state:DataAgentState):
     print(result['final_answer'])
 
     final_message=result['messages'][-1]
+    generated_sql_query=result['generated_sql_query']
     return {
-        'messages':[final_message]
+        'messages':[final_message],
+        'generated_sql_query':generated_sql_query
     }
 
 def checkRoute(state:DataAgentState)->Literal['sql','etl']:
