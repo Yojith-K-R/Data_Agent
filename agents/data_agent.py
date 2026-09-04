@@ -32,7 +32,9 @@ def routerNode(state:DataAgentState):
     routerResponse=llm_router.invoke(user_question)
     state.routerResponse=routerResponse.answer
 
-    return state
+    return {
+        'routerResponse':routerResponse.answer
+    }
 
 def etl_node(state:DataAgentState):
     result = etlAgent.invoke(
@@ -41,18 +43,12 @@ def etl_node(state:DataAgentState):
                 }
             )
         
-    print()
+    final_message=result['messages'][-1]
+    return {
+        'messages':[final_message]
+    }
 
 
-    for msg in result['messages']:
-        print(type(msg))
-        print(msg.content)
-        try:
-            print(msg.tool_calls)
-
-        except:
-            print("No tool calls present")
-        print()
 
 def sql_node(state:DataAgentState):
     initial_state = AgentState(
@@ -71,6 +67,11 @@ def sql_node(state:DataAgentState):
     print("__________")
     print(result['final_answer'])
 
+    final_message=result['messages'][-1]
+    return {
+        'messages':[final_message]
+    }
+
 def checkRoute(state:DataAgentState)->Literal['sql','etl']:
     if state.routerResponse=='etl':
         return 'etl'
@@ -88,6 +89,9 @@ graph.add_conditional_edges('routerNode',checkRoute,{
     'etl':'etl_node',
     'sql':'sql_node'
 })
+
+graph.add_edge('etl_node',END)
+graph.add_edge('sql_node',END)
 
 data_agent=graph.compile()
 
