@@ -1,8 +1,8 @@
 [project]
 name = "data-agent"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "Secure Natural-Language Analytics and ETL Platform"
+
 authors = [
     { name = "Yojith KR", email = "yojithkr@gmail.com" }
 ]
@@ -21,8 +21,6 @@ dependencies = [
     "python-dotenv>=1.2.3",
 ]
 
-[project.scripts]
-data-agent = "data_agent:main"
 
 [build-system]
 requires = ["uv_build>=0.12.0,<0.13.0"]
